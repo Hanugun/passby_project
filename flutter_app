@@ -1,0 +1,207 @@
+import 'package:flutter/material.dart';
+import 'package:random_string/random_string.dart';
+import 'dart:math' show Random;
+
+void main() => runApp(new MyApp());
+
+class MyApp extends StatelessWidget {
+  // This widget is the root of your application.
+  @override
+  Widget build(BuildContext context) {
+    return new MaterialApp(
+        title: 'PassBy project',
+        theme: new ThemeData(
+        primarySwatch: Colors.red,
+    ),
+    home: new MyHomePage(title: 'Passby address book'),
+    );
+  }
+}
+
+class MyHomePage extends StatefulWidget {
+  MyHomePage({Key key, this.title}) : super(key: key);
+  final String title;
+
+  @override
+  _MyHomePageState createState() => new _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  TextEditingController editingController = TextEditingController();
+  TextEditingController editingControllerEdit = TextEditingController();
+
+  var randomItems = List<String>.generate(5, (i) => randomAlphaNumeric(8));
+  var items = List<String>();
+
+  @override
+  void initState() {
+    items.addAll(randomItems);
+    super.initState();
+  }
+
+  void filterSearchResults(String query) {
+    String tempItem;
+    if(query.isNotEmpty) {
+      query = query.toLowerCase();
+      List<String> dummyListData = List<String>();
+      randomItems.forEach((item) {
+        tempItem = item.toLowerCase();
+        if(tempItem.contains(query)) {
+          dummyListData.add(item);
+        }
+      });
+      setState(() {
+        items.clear();
+        items.addAll(dummyListData);
+      });
+      return;
+    } else {
+      setState(() {
+        items.clear();
+        items.addAll(randomItems);
+      });
+    }
+
+  }
+  void addItem(String addItem){
+    List<String> addSearchList = List<String>();
+    addSearchList.addAll(randomItems);
+    if(addItem.isNotEmpty) {
+      addSearchList.add(addItem);
+      setState(() {
+        randomItems.clear();
+        randomItems.addAll(addSearchList);
+      });
+    }
+    else {
+      setState(() {
+        items.clear();
+        items.addAll(randomItems);
+      });
+    }
+  }
+  _editFormDialog(BuildContext context, int index){
+    return showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) {
+          return AlertDialog(
+            actions: <Widget>[
+              FlatButton(
+                color: Colors.red,
+                onPressed: () => Navigator.pop(context),
+                child: Text('Cancel'),
+              ),
+              FlatButton(
+                color: Colors.blue,
+                onPressed: () async {
+                  if (editingControllerEdit.text.isNotEmpty) {
+                    print(items[index]);
+                    setState(() {
+                      randomItems[index] = editingControllerEdit.text;
+                      items.clear();
+                      items.addAll(randomItems);
+                    });
+                  }
+                },
+                child: Text('Update'),
+              )
+            ],
+            title: Text('Edit Categories Form'),
+            content: SingleChildScrollView(
+              child: Column(
+                children: <Widget>[
+                  TextField(
+                    controller: editingControllerEdit,
+                    decoration: InputDecoration(
+                        hintText: 'Write new address',
+                        labelText: 'New Address:'),
+                  ),
+                ],
+              ),
+            ),
+          );
+
+        });
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    return new Scaffold(
+      appBar: new AppBar(
+        title: new Text(widget.title),
+      ),
+      body: Container(
+        child: Column(
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.all(10.0),
+              child: TextField(
+                onChanged: (value) {
+                  filterSearchResults(value);
+                },
+                controller: editingController,
+                decoration: InputDecoration(
+                    labelText: "Search",
+                    hintText: "Search",
+                    prefixIcon: Icon(Icons.search),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(25.0)))),
+              ),
+            ),
+            RaisedButton(
+              child: Text('Add'),
+              onPressed: (){
+                addItem(editingController.text);
+              },
+            ),
+            Expanded(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: items.length,
+                itemBuilder: (context, index) {
+                  var item = items[index];
+                  return Dismissible(
+                    key: Key(item),
+                    onDismissed: (direction) {
+                      setState(() {
+                        if(editingController.text.isNotEmpty){
+                          randomItems.remove(item);
+                          items.remove(item);
+                        }
+                        else {
+                          randomItems.removeAt(index);
+                          items.removeAt(index);
+                        }
+                      });
+                      Scaffold.of(context)
+                          .showSnackBar(SnackBar(content: Text("$item dismissed")));
+                    },
+                    background: Container(
+                        alignment:AlignmentDirectional.centerEnd ,
+                        color: Colors.red,
+                        child: Icon(
+                          Icons.delete,
+                          color: Colors.white,
+                        ),
+                    ),
+                    child: ListTile(
+                        title: Text('$item'),
+                        leading: IconButton(
+                            icon: Icon(Icons.edit),
+                            onPressed: (){
+                              _editFormDialog(context, index);
+                            }
+                            ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
